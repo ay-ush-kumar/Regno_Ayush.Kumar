@@ -1,0 +1,390 @@
+// Use Database
+use vitb
+
+// =========================
+// STUDENTS COLLECTION QUERIES
+// =========================
+
+// 1. Find CS students with marks > 80
+db.students.find({
+    dept: "CS",
+    marks: { $gt: 80 }
+});
+
+Output:
+[
+  { _id: 1, name: "Rahul", dept: "CS", marks: 85 },
+  { _id: 6, name: "Karan", dept: "CS", marks: 95 }
+]
+
+// 2. Find students with marks between 60 and 85
+db.students.find({
+    marks: {
+        $gte: 60,
+        $lte: 85
+    }
+});
+
+Output:
+[
+  { _id: 1, name: "Rahul", marks: 85 },
+  { _id: 2, name: "Priya", marks: 78 },
+  { _id: 4, name: "Anjali", marks: 65 }
+]
+
+// 3. Find students from IT or ECE departments
+db.students.find({
+    dept: {
+        $in: ["IT", "ECE"]
+    }
+});
+
+Output:
+[
+  { _id: 2, name: "Priya", dept: "IT" },
+  { _id: 3, name: "Arun", dept: "ECE" },
+  { _id: 5, name: "Neha", dept: "IT" }
+]
+
+// 4. Find students not in CS department
+db.students.find(
+    {
+        dept: {
+            $nin: ["CS"]
+        }
+    },
+    {
+        _id: 0,
+        name: 1,
+        dept: 1
+    }
+);
+
+Output:
+[
+  { name: "Priya", dept: "IT" },
+  { name: "Arun", dept: "ECE" },
+  { name: "Anjali", dept: "MECH" }
+]
+
+// 5. Find students from Chennai
+db.students.find({
+    "address.city": "Chennai"
+});
+
+Output:
+[
+  {
+    _id: 1,
+    name: "Rahul",
+    address: { city: "Chennai" }
+  }
+]
+
+// 6. Department-wise student count and average marks
+db.students.aggregate([
+    {
+        $group: {
+            _id: "$dept",
+            totalStudents: { $sum: 1 },
+            averageMarks: { $avg: "$marks" }
+        }
+    }
+]);
+
+Output:
+[
+  { _id: "CS", totalStudents: 2, averageMarks: 90 },
+  { _id: "IT", totalStudents: 2, averageMarks: 81 },
+  { _id: "ECE", totalStudents: 1, averageMarks: 72 }
+]
+
+// 7. Remove scholarship field
+db.students.updateMany(
+    {},
+    {
+        $unset: {
+            scholarship: ""
+        }
+    }
+);
+
+Output:
+{
+  acknowledged: true,
+  matchedCount: 6,
+  modifiedCount: 6
+}
+
+// 8. Add scholarship=false for CS students
+db.students.updateMany(
+    {
+        dept: "CS"
+    },
+    {
+        $set: {
+            scholarship: false
+        }
+    }
+);
+
+Output:
+{
+  acknowledged: true,
+  matchedCount: 2,
+  modifiedCount: 2
+}
+
+// 9. Increment marks of student with _id:6 by 10
+db.students.updateOne(
+    { _id: 6 },
+    {
+        $inc: {
+            marks: 10
+        }
+    }
+);
+
+Output:
+{
+  acknowledged: true,
+  matchedCount: 1,
+  modifiedCount: 1
+}
+
+// Verify Updated Record
+db.students.find({ _id: 6 });
+
+Output:
+[
+  {
+    _id: 6,
+    name: "Karan",
+    marks: 105
+  }
+]
+
+// 10. Find 3rd and 4th highest scoring students
+db.students.find()
+.sort({ marks: -1 })
+.skip(2)
+.limit(2);
+
+Output:
+[
+  { _id: 1, name: "Rahul", marks: 85 },
+  { _id: 5, name: "Neha", marks: 84 }
+]
+
+// =========================
+// PRODUCTS COLLECTION QUERIES
+// =========================
+
+// 11. Category-wise Total Revenue
+db.products.aggregate([
+    {
+        $group: {
+            _id: "$category",
+            totalRevenue: {
+                $sum: {
+                    $multiply: ["$price", "$sold"]
+                }
+            }
+        }
+    }
+]);
+
+Output:
+[
+  { _id: "Electronics", totalRevenue: 450000 },
+  { _id: "Accessories", totalRevenue: 120000 }
+]
+
+// =========================
+// EMPLOYEES COLLECTION QUERIES
+// =========================
+
+// 12. Employees with salary > 50000 and experience > 5
+db.employees.find({
+    salary: { $gt: 50000 },
+    experience: { $gt: 5 }
+});
+
+Output:
+[
+  {
+    empId: 104,
+    name: "Vijay",
+    salary: 65000,
+    experience: 8
+  },
+  {
+    empId: 107,
+    name: "Meena",
+    salary: 70000,
+    experience: 10
+  }
+]
+
+// 13. Employees whose skills array size > 2
+db.employees.find({
+    $expr: {
+        $gt: [
+            { $size: "$skills" },
+            2
+        ]
+    }
+});
+
+Output:
+[
+  {
+    empId: 101,
+    name: "Arun",
+    skills: ["Java","MongoDB","Spring"]
+  },
+  {
+    empId: 104,
+    name: "Vijay",
+    skills: ["Python","AWS","Docker","MongoDB"]
+  }
+]// 14. Departments with average salary > 50000
+db.employees.aggregate([
+    {
+        $group: {
+            _id: "$department",
+            avgSalary: {
+                $avg: "$salary"
+            }
+        }
+    },
+    {
+        $match: {
+            avgSalary: {
+                $gt: 50000
+            }
+        }
+    }
+]);
+
+Output:
+[
+  {
+    _id: "HR",
+    avgSalary: 55000
+  },
+  {
+    _id: "Finance",
+    avgSalary: 62000
+  }
+]
+
+// 15. Minimum salary in each department
+db.employees.aggregate([
+    {
+        $group: {
+            _id: "$department",
+            minSalary: {
+                $min: "$salary"
+            }
+        }
+    }
+]);
+
+Output:
+[
+  { _id: "IT", minSalary: 45000 },
+  { _id: "HR", minSalary: 55000 },
+  { _id: "Finance", minSalary: 60000 }
+]
+
+// 16. Rename field city to location
+db.employees.updateMany(
+    {},
+    {
+        $rename: {
+            "city": "location"
+        }
+    }
+);
+
+Output:
+{
+  acknowledged: true,
+  matchedCount: 7,
+  modifiedCount: 7
+}
+
+// Verify
+db.employees.findOne();
+
+Output:
+{
+  empId: 101,
+  name: "Arun",
+  location: "Chennai",
+  department: "IT"
+}// 17. Find products where stock is of type Number
+db.products.find({
+    stock: {
+        $type: "number"
+    }
+});
+
+Output:
+[
+  {
+    _id: 1,
+    name: "Laptop",
+    stock: 25
+  },
+  {
+    _id: 2,
+    name: "Mobile",
+    stock: 50
+  },
+  {
+    _id: 3,
+    name: "Headphones",
+    stock: 100
+  }
+]
+
+// 18. Set active status to true for all inactive students
+db.students.updateMany(
+    {
+        active: false
+    },
+    {
+        $set: {
+            active: true
+        }
+    }
+);
+
+Output:
+{
+  acknowledged: true,
+  matchedCount: 3,
+  modifiedCount: 3
+}
+
+// Verify Updated Records
+db.students.find(
+    {},
+    {
+        _id: 0,
+        name: 1,
+        active: 1
+    }
+);
+
+Output:
+[
+  { name: "Rahul", active: true },
+  { name: "Priya", active: true },
+  { name: "Arun", active: true },
+  { name: "Anjali", active: true },
+  { name: "Neha", active: true },
+  { name: "Karan", active: true }
+]
